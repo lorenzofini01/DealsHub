@@ -1,0 +1,80 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: offer_user
+      POSTGRES_PASSWORD: offer_pass
+      POSTGRES_DB: offersdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    depends_on: [ postgres, redis ]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://offer_user:offer_pass@postgres:5432/offersdb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: supersecretkey
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+
+  worker:
+    build: ./backend
+    command: celery -A app.celery_app worker --loglevel=info
+    depends_on: [backend, redis, postgres]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://offer_user:offer_pass@postgres:5432/offersdb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: supersecretkey
+    volumes:
+      - ./backend:/app
+
+  beat:
+    build: ./backend
+    command: celery -A app.celery_app beat --loglevel=info
+    depends_on: [redis, postgres]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://offer_user:offer_pass@postgres:5432/offersdb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: supersecretkey
+    volumes:
+      - ./backend:/app
+
+  collector:
+    build: ./collector
+    restart: unless-stopped
+    depends_on: [backend]
+    env_file:
+      - .env
+    environment:
+      BACKEND_URL: http://backend:8000
+      TELEGRAM_SESSION: telethon.session
+    volumes:
+      - ./collector:/app
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
