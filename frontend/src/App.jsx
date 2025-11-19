@@ -27,7 +27,7 @@ function App() {
 
   // 1. Carica le categorie dal backend all'avvio
   useEffect(() => {
-    fetch('http://localhost:8000/api/categories')
+    fetch('http://localhost:8000/api/v2/categories')
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(() => setCategories(["Tutte", "Elettronica", "Altro"])) // Fallback
@@ -36,8 +36,8 @@ function App() {
   // 2. Funzione Fetch Offerte
   const fetchOffers = (cat, searchTerm) => {
     setLoading(true)
-    let url = `http://localhost:8000/api/offers/active?limit=100`
-    
+    let url = `http://localhost:8000/api/v2/offers?limit=100`
+
     // Se category ha un'emoji (es. "🍎 Mondo Apple"), dobbiamo encodarla bene
     if (cat && cat !== 'Tutte') url += `&category=${encodeURIComponent(cat)}`
     if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`
@@ -45,7 +45,8 @@ function App() {
     fetch(url)
       .then(res => res.json())
       .then(data => {
-        setOffers(data)
+        // API v2 ritorna {total, limit, offset, offers: [...]}
+        setOffers(data.offers || [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -71,6 +72,15 @@ function App() {
     if (diff < 3600) return `${Math.floor(diff/60)} min fa`;
     if (diff < 86400) return `${Math.floor(diff/3600)} ore fa`;
     return `${Math.floor(diff/86400)} gg fa`;
+  }
+
+  // Track user click (per analytics e recommendation)
+  const trackClick = (offerId) => {
+    fetch(`http://localhost:8000/api/v2/offers/${offerId}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: 'click' })
+    }).catch(err => console.warn('Track failed:', err))
   }
 
   return (
@@ -154,11 +164,12 @@ function App() {
                         €{offer.price ? offer.price : '???'}
                       </span>
                     </div>
-                    <a 
-                      href={offer.product_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={offer.product_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn-buy"
+                      onClick={() => trackClick(offer.id)}
                     >
                       Vedi
                     </a>

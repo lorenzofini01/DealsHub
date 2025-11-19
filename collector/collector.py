@@ -44,7 +44,7 @@ def is_useful_link(url):
 
 async def send_to_backend(http_client, payload):
     try:
-        resp = await http_client.post(f"{BACKEND}/api/offers/ingest", json=payload, timeout=10)
+        resp = await http_client.post(f"{BACKEND}/api/v2/offers/ingest", json=payload, timeout=10)
         if resp.status_code == 201:
             print(f"✅ Inviato: {payload['url'][:40]}...")
     except Exception as e:
