@@ -1,10 +1,30 @@
-fastapi
-uvicorn[standard]
-SQLAlchemy[asyncio]
-asyncpg
-pydantic
-celery[redis]
-requests
-beautifulsoup4
-python-multipart
-python-dotenv
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# Database
+SQLAlchemy[asyncio]>=2.0.25
+asyncpg>=0.29.0
+
+# Caching & Task Queue
+celery[redis]>=5.3.0
+redis>=5.0.1
+cachetools>=5.3.2  # LRU cache in-memory
+
+# HTTP & Scraping
+httpx>=0.26.0  # Async HTTP client (sostituisce requests)
+beautifulsoup4>=4.12.0
+lxml>=5.1.0  # Parser veloce per BS4
+
+# Utils
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+
+# ML/AI (per future features)
+scikit-learn>=1.4.0  # Per category detection ML
+numpy>=1.26.0
+
+# Monitoring & Logging (opzionale ma raccomandato)
+# prometheus-client>=0.19.0  # Metrics
+# sentry-sdk[fastapi]>=1.40.0  # Error tracking
